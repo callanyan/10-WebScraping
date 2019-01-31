@@ -160,6 +160,7 @@ pprint(results)
 conn = "mongodb://localhost:27017"
 client = MongoClient(conn)
 db = client.scrapedInfo
+print(client.list_database_names())
 if 'scrapedInfo' in client.list_database_names(): 
     client.drop_database('scrapedInfo')   
 collection = db.scrapedMarsInfo
@@ -172,6 +173,6 @@ except:
     print("dump to mongoDB FAILED")
 
 
-
-
+                
+        
 print("SCRIPT COMPLETE")
