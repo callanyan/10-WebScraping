@@ -8,11 +8,15 @@ from pprint import pprint
 from pymongo import MongoClient
 
 
+
 #INITIALIZE ARRAYS
 MarsNewsTitles = []
 MarsNewsContent = []
 results = {}
 
+
+
+#CODE HERE
 def scrape(): 
     #GET THE RESPONSE, PARSE THE RESPONSE 
     nasaNews_url = "https://mars.nasa.gov/news/?page=0&per_page=20&order=publish_date+desc%2Ccreated_at+desc&search=&category=19%2C165%2C184%2C204&blank_scope=Latest"
@@ -152,19 +156,27 @@ scrape()
 
 #PRINT RESULTS DICTIONARY
 pprint(results)
+print("\n")
 
 
 
 #MONGODB
 #establish connection and check if database exists
-conn = "mongodb://localhost:27017"
-client = MongoClient(conn)
-db = client.scrapedInfo
-print(client.list_database_names())
-if 'scrapedInfo' in client.list_database_names(): 
-    client.drop_database('scrapedInfo')   
-collection = db.scrapedMarsInfo
-print("mongoDB connetion, database, schema, and table established")
+try:
+    conn = "mongodb://localhost:27017"
+    print("established mongoDB connection")
+    client = MongoClient(conn)
+    print("established mongoDB client")
+    db = client.scrapedInfo
+    print("established mongoDB database")
+    if 'scrapedInfo' in client.list_database_names(): 
+        client.drop_database('scrapedInfo')   
+    collection = db.scrapedMarsInfo
+    posts = db.posts
+    
+    print("mongoDB connetion, client, and database established")
+except:
+    print("mongoDB connection FAILED")
 #upload dictionary to database
 try:
     collection.insert_many(results)
@@ -173,6 +185,5 @@ except:
     print("dump to mongoDB FAILED")
 
 
-                
-        
+
 print("SCRIPT COMPLETE")
