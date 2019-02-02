@@ -46,21 +46,9 @@ def scrape():
         print(item)
     print("\n")
     
-    #APPEND NEWS TITLE AND CONTENT TO RESULTS DICTIONARY
-    try:
-        results.update({"marsNewsTitles" : MarsNewsTitles})
-        print("news titles appended to dictionary")    
-    except:
-        print("failed to append titles to dictionary")    
-    try:
-        results.update({"marsNewsContent" : MarsNewsContent})
-        print("news content appended to dictionary")  
-    except:
-        print("failed to append content to dictionary") 
-    print("\n")
     
     
-        
+    #JPL IMAGE    
     #GET THE RESPONSE, PARSE THE RESPONSE 
     jplImage_url = "https://www.jpl.nasa.gov/spaceimages/?search=&category=Mars)"
     image_response = requests.get(jplImage_url)
@@ -81,18 +69,9 @@ def scrape():
     firstImageLink = firstImage.attrs['data-fancybox-href']
     #print(imageLinkEnd)
     
-    #COMBINE URL START TO END FOUND IN <A> TAG
-    firstImageLink = "https://www.jpl.nasa.gov" + firstImageLink
-    print(firstImageLink)
-    try:
-        results.update({"firstImageLink" : firstImageLink})
-        print("large image link appended to dictionary")  
-    except:
-        print("failed to append large image link to dictionary") 
-    print("\n")
     
     
-    
+    #MARS WEATHER
     #GET THE RESPONSE, PARSE THE RESPONSE 
     twitterWeather_url = "https://twitter.com/marswxreport?lang=en"
     weather_response = requests.get(twitterWeather_url)
@@ -112,15 +91,10 @@ def scrape():
     #FIND WEATHER BY ISOLATING FIRST CONTENT OF LATEST TWEET. USING FIND WOULD GIVE ME CONTENTS OF THE <A> TAG WITHIN TOO
     mars_weather = currentTweet.p.contents[0].strip()
     print(mars_weather)
-    try:
-        results.update({"mars_weather" : mars_weather})
-        print("mars_weather appended to dictionary")  
-    except:
-        print("failed to append mars_weather to dictionary") 
-    print("\n")    
+
     
     
-    
+    #MARSE FACTS TABLE
     #GET THE RESPONSE, PARSE THE RESPONSE 
     facts_url = "https://space-facts.com/mars/"
     
@@ -128,62 +102,106 @@ def scrape():
     tables = pd.read_html(facts_url)
     #print(tables)
     
-    #MAKE TABLE INTO DATAFRAME
+    #facts table to DF
     factsDf = tables[0]
     #factsDf
-    print("Facts DataFrame Created\n")
-    try:
-        results.update({"factsDf" : factsDf})
-        print("facts table df appended to dictionary")  
-    except:
-        print("failed to append facts table df to dictionary") 
-    print("\n")      
-    
     
     
     #WRITE TO HTML
     factsDf.to_html('MarsFactsTable.html')
     print("HTML Created\n")
-    return
     #END OF FUNCTION
 
 
 
+    #PRINT RESULTS DICTIONARY
+    pprint(results)
+    print("\n")
+    
+    
+    
+    #MAKE DISCTIONARY TO POST TO MONGODB
+    #append news title and content to results dictionary
+    try:
+        results.update({"marsNewsTitles" : MarsNewsTitles})
+        print("news titles appended to dictionary")    
+    except:
+        print("failed to append titles to dictionary")    
+    try:
+        results.update({"marsNewsContent" : MarsNewsContent})
+        print("news content appended to dictionary")  
+    except:
+        print("failed to append content to dictionary") 
+    print("\n")
+    #append weather to results dictionary
+    try:
+        results.update({"mars_weather" : mars_weather.strip()})
+        print("mars_weather appended to dictionary")  
+    except:
+        print("failed to append mars_weather to dictionary") 
+    print("\n")    
+    #append jpl image url to dictionary
+    try:
+        results.update({"firstImageLink" : firstImageLink})
+        print("large image link appended to dictionary")  
+    except:
+        print("failed to append large image link to dictionary") 
+    print("\n")
+    #append facts table to dictionary
+    print("Facts DataFrame Created\n")
+    try:
+        results.update({"factsDf" : factsDf.to_html()})
+        print("facts table df appended to dictionary")  
+    except:
+        print("failed to append facts table df to dictionary") 
+    print("\n")      
+    
+
+    
+    #PRINT RESULTS DICTIONARY
+    pprint(results)
+    print(type(results))
+    print("\n")
+    
+    
+    
+    #MONGODB
+    #establish connection and check if database exists
+    try:
+        conn = "mongodb://localhost:27017"
+        print("established mongoDB connection")
+        client = MongoClient(conn)
+        print("established mongoDB client")
+        db = client.scrapedInfo
+        print("established mongoDB database")
+        if 'scrapedInfo' in client.list_database_names(): 
+            client.drop_database('scrapedInfo')   
+        collection = db.scrapedMarsInfo    
+        print("mongoDB connetion, client, and database established")
+    except:
+        print("mongoDB connection FAILED")
+        
+        
+        
+    #upload dictionary to database
+    try:
+        collection.insert_one(results)
+        print("results DUMPED to mongoDB")
+    except:
+        print("dump to mongoDB FAILED")
+        
+        
+        
+
+    
+    
+    ###############################################
+    print("SCRIPT COMPLETE")
+    
+    
+    
 #CALL FUNCTION
 scrape()
 
 
 
-#PRINT RESULTS DICTIONARY
-pprint(results)
-print("\n")
-
-
-
-#MONGODB
-#establish connection and check if database exists
-try:
-    conn = "mongodb://localhost:27017"
-    print("established mongoDB connection")
-    client = MongoClient(conn)
-    print("established mongoDB client")
-    db = client.scrapedInfo
-    print("established mongoDB database")
-    if 'scrapedInfo' in client.list_database_names(): 
-        client.drop_database('scrapedInfo')   
-    collection = db.scrapedMarsInfo
-    posts = db.posts
-    
-    print("mongoDB connetion, client, and database established")
-except:
-    print("mongoDB connection FAILED")
-#upload dictionary to database
-try:
-    collection.insert_many(results)
-    print("results dumped to mongoDB")
-except:
-    print("dump to mongoDB FAILED")
-
-
-
-print("SCRIPT COMPLETE")
